@@ -8,7 +8,8 @@ from openai import AzureOpenAI
 client = AzureOpenAI(
     api_key=secrets.AZURE_OPENAI_API_KEY,
     api_version=secrets.AZURE_OPENAI_API_VERSION,
-    azure_endpoint=secrets.AZURE_OPENAI_ENDPOINT
+    azure_endpoint=secrets.AZURE_OPENAI_ENDPOINT,
+    default_headers={"User-Agent": "agentic-rag"}
 )
 
 
@@ -21,7 +22,7 @@ with open("self_critique_loop_dataset.json", "r") as f:
 
 for entry in data:
     response = client.embeddings.create(
-        model=secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+        deployment_id=secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
         input=entry["answer_snippet"]
     )
     embedding = response.data[0].embedding

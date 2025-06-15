@@ -24,11 +24,36 @@ class WorkflowState(TypedDict):
 
 # Node functions
 def retrieve_kb(state):
-    # Dummy logic (replace with embedding based retrieval)
-    return {"question": state["question"], "answer": "Dummy Answer", "critique": ""}
+    try:
+        # Query the collection for relevant documents
+        results = collection.query(
+            query_texts=[state["question"]],
+            n_results=3
+        )
+        
+        # Combine retrieved answers
+        retrieved_answer = "Based on the knowledge base: " + " ".join(results.get('documents', [[]])[0])
+        return {"question": state["question"], "answer": retrieved_answer, "critique": ""}
+    except Exception as e:
+        print(f"Error in retrieve_kb: {str(e)}")
+        return {"question": state["question"], "answer": "Error retrieving information", "critique": ""}
+
 
 def generate_answer(state):
-    return {"question": state["question"], "answer": f"Generated answer for: {state['question']}", "critique": ""}
+    try:
+        completion = client.chat.completions.create(
+            deployment_id=secrets.AZURE_OPENAI_DEPLOYMENT_NAME,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that provides accurate software engineering answers."},
+                {"role": "user", "content": f"Question: {state['question']}\nContext: {state['answer']}\nProvide a comprehensive answer."}
+            ]
+        )
+        generated_answer = completion.choices[0].message.content
+        return {"question": state["question"], "answer": generated_answer, "critique": ""}
+    except Exception as e:
+        print(f"Error in generate_answer: {str(e)}")
+        return {"question": state["question"], "answer": "Error generating answer", "critique": ""}
+
 
 def critique_answer(state):
     return {"question": state["question"], "answer": state["answer"], "critique": "Needs refinement"}
